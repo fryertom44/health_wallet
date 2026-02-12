@@ -4,5 +4,13 @@
     <p>Manage patient records and assessments</p>
 
     <%= link_to "View Patients", patients_path, class: "home-link" %>
+
+    <p>
+      <%= form_with url: import_assessments_path do |f| %>
+        <%= f.file_field :file, accept: 'application/txt' %>
+        <br />
+        <%= f.submit "Import Assessments", class: "home-link" %>
+      <% end %>
+    </p>
   </div>
 </div>
