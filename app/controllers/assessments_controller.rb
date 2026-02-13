@@ -27,9 +27,13 @@ class AssessmentsController < ApplicationController
 
   def import
     if import_params[:file].present?
-      result = ImportAssessmentsJob.perform_later(import_params[:file].tempfile.path)
-      @job_id = result.job_id
-      redirect_to root_url, notice: "Assessments import started."
+      content = import_params[:file].tempfile.read.force_encoding('UTF-8')
+      Rails.logger.info "Importing Assessments: #{content.inspect}"
+      @import = AssessmentImport.new(content:)
+      if @import.save
+        ImportAssessmentsJob.set(wait: 5.seconds).perform_later(@import.id)
+        redirect_to root_url, notice: "Assessments import started."
+      end
     else
       redirect_to root_url, alert: "File missing"
     end
@@ -44,6 +48,6 @@ class AssessmentsController < ApplicationController
   end
 
   def import_params
-    params.require(:import).permit(:file)
+    params.permit(:file, :authenticity_token, :commit)
   end
 end

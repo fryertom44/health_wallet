@@ -1,0 +1,8 @@
+<div id="assessment-import-notice">
+  <% if notice %>
+    <p style="color: green; font-weight: bold;"><%= notice %></p>
+  <% end %>
+  <% if total_imported.present? %>
+    <p><%= total_imported %> <%= "assessment".pluralize(total_imported) %> imported</p>
+  <% end %>
+</div>

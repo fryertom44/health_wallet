@@ -3,47 +3,64 @@ class ImportAssessmentsJob < ApplicationJob
 
   PATIENT_DELIMITER_REGEX = /(?=^([^|]*\|){3}[^|]*$)/
 
-  # - Read, parse, and validate the file content
-  # - For each file, extract patient information, assessment reference, and observations
-  # - Create or update `Patient`, `Assessment`, and `Observation` records in the database
-  #   following these rules:
-  #   - **Patient:** Find existing by `name` + `dob` + `sex_at_birth`, or create new
-  #   - **Assessment:** Find existing by `reference` within patient, or create new
-  #   - **Observation:** Find existing by `code` within assessment and update `value`/`units`, or create new
-  # - Return a summary of the import process, including the number of patients, assessments, and observations created or updated
-  # - Log the import process to the console
-  def perform(file_path)
-    read_file(file_path)
+  def perform(id)
+    read_file(id)
+    return false if @file.nil?
+
     import_rows(@file)
-    # TODO: broadcast summary?
+    broadcast_summary
+    cleanup
   end
 
-  def read_file(file_path)
-    @file = File.read(file_path)
+  def read_file(id)
+    @file = AssessmentImport.find(id)
+  rescue Mongoid::Errors::DocumentNotFound
+    Turbo::StreamsChannel.broadcast_replace_to(
+      "import_assessments_channel",
+      target: "assessment-import-notice", 
+      partial: "assessments/notice",
+      locals: {
+        total_imported: 0,
+        notice: "File not found"
+      }
+    )
   end
 
   def import_rows(file)
-    file.split(PATIENT_DELIMITER_REGEX).reject { |record| record.length < 4 }.each do |record|
-      rows = record.split("\n")
+    @assessment_groups = file.content.split(PATIENT_DELIMITER_REGEX).reject { |group| group.length < 4 }
+    @assessment_groups.each do |group|
+      rows = group.split("\n")
       patient_row = rows.first
       observation_rows = rows[1..]
-      @patient = Patient.find_or_create_by(
-        name: patient_row.split("|")[0],
-        dob: patient_row.split("|")[1],
-        sex_at_birth: patient_row.split("|")[2] == "F" ? "Female" : "Male"
-      )
-      @assessment = @patient.assessments.find_or_create_by(
-        reference: patient_row.split("|")[3]
-      )
+      name, dob, sex_at_birth, reference = patient_row.split("|")
+      @patient = Patient.find_or_create_by(name:, dob:, sex_at_birth: (sex_at_birth == "F" ? "Female" : "Male"))
+      @assessment = @patient.assessments.find_or_create_by(reference:)
       @observations = observation_rows.map do |obs_row|
-        obs = @assessment.observations.find_or_create_by(code: obs_row.split("|")[0]).tap do |obs|
-          obs.value = obs_row.split("|")[1]
-          obs.units = obs_row.split("|")[2]
+        code, value, units = obs_row.split("|")
+        obs = @assessment.observations.find_or_create_by(code:).tap do |obs|
+          obs.value = value
+          obs.units = units
           obs.save!
         end
       end
       @assessment.observations = @observations
       @assessment.save!
     end
+  end
+
+  def broadcast_summary
+    Turbo::StreamsChannel.broadcast_replace_to(
+      "import_assessments_channel",
+      target: "assessment-import-notice",
+      partial: "assessments/notice",
+      locals: {
+        total_imported: @assessment_groups.size,
+        notice: "Assessments imported successfully"
+      }
+    )
+  end
+
+  def cleanup
+    @file.destroy
   end
 end

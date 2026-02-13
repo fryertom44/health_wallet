@@ -1,4 +1,9 @@
+<%= turbo_stream_from "import_assessments_channel" %>
+
+<div id="assessment-import-notice"></div>
+
 <div class="home-container">
+
   <div class="home-card">
     <h1>Health Wallet</h1>
     <p>Manage patient records and assessments</p>
@@ -7,7 +12,7 @@
 
     <p>
       <%= form_with url: import_assessments_path do |f| %>
-        <%= f.file_field :file, accept: 'application/txt' %>
+        <%= f.file_field :file, accept: 'text/plain', style: "float: right; padding-bottom: 5px" %>
         <br />
         <%= f.submit "Import Assessments", class: "home-link" %>
       <% end %>
