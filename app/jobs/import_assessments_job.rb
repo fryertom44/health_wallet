@@ -37,10 +37,10 @@ class ImportAssessmentsJob < ApplicationJob
       @assessment = @patient.assessments.find_or_create_by(reference:)
       @observations = observation_rows.map do |obs_row|
         code, value, units = obs_row.split("|")
-        obs = @assessment.observations.find_or_create_by(code:).tap do |obs|
-          obs.value = value
-          obs.units = units
-          obs.save!
+        if Observation.valid_code?(code)
+          obs = @assessment.observations.find_or_create_by(code:).tap do |obs|
+            obs.update(value:, units:, name: Observation.name_lookup(code))
+          end
         end
       end
       @assessment.observations = @observations
