@@ -22,6 +22,10 @@ class Observation
     "2093-3" => "Cholesterol"
   }.freeze
 
+  validates_inclusion_of :code, in: CODE_NAMES.keys
+  validates_presence_of :value, :units
+  validates_numericality_of :value
+
   def self.name_lookup(code)
     CODE_NAMES[code]
   end

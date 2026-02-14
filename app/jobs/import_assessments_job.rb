@@ -17,7 +17,7 @@ class ImportAssessmentsJob < ApplicationJob
   rescue Mongoid::Errors::DocumentNotFound
     Turbo::StreamsChannel.broadcast_replace_to(
       "import_assessments_channel",
-      target: "assessment-import-notice", 
+      target: "assessment-import-notice",
       partial: "assessments/notice",
       locals: {
         total_imported: 0,

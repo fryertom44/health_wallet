@@ -27,7 +27,7 @@ class AssessmentsController < ApplicationController
 
   def import
     if import_params[:file].present?
-      content = import_params[:file].tempfile.read.force_encoding('UTF-8')
+      content = import_params[:file].tempfile.read.force_encoding("UTF-8")
       Rails.logger.info "Importing Assessments: #{content.inspect}"
       @import = AssessmentImport.new(content:)
       if @import.save

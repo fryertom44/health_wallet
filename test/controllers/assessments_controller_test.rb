@@ -46,7 +46,7 @@ class AssessmentsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "should redirect to root with alert when file parameter is missing" do
-    post import_assessments_url, params: { }
+    post import_assessments_url, params: {}
 
     assert_redirected_to root_url
     assert_equal "File missing", flash[:alert]
