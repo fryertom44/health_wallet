@@ -31,8 +31,7 @@ class AssessmentsController < ApplicationController
       Rails.logger.info "Importing Assessments: #{content.inspect}"
       @import = AssessmentImport.new(content:)
       if @import.save
-        ImportAssessmentsJob.set(wait: 5.seconds).perform_later(@import.id)
-        redirect_to root_url, notice: "Assessments import started."
+        ImportAssessmentsJob.perform_later(@import.id)
       end
     else
       redirect_to root_url, alert: "File missing"
