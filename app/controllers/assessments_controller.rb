@@ -31,6 +31,15 @@ class AssessmentsController < ApplicationController
       Rails.logger.info "Importing Assessments: #{content.inspect}"
       @import = AssessmentImport.new(content:)
       if @import.save
+        Turbo::StreamsChannel.broadcast_replace_to(
+          "import_assessments_channel",
+          target: "assessment-import-notice",
+          partial: "assessments/notice",
+          locals: {
+            total_imported: 0,
+            notice: "Assessment Import pending"
+          }
+        )
         ImportAssessmentsJob.perform_later(@import.id)
       end
     else

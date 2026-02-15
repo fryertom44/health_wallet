@@ -1,6 +1,8 @@
+<% notice_colour = local_assigns[:success] == true ? "green" : "red" %>
+<% notice_colour = !local_assigns.key?(:success) ? "black" : notice_colour %>
 <div id="assessment-import-notice">
   <% if notice %>
-    <p style="color: green; font-weight: bold;"><%= notice %></p>
+    <p style="color: <%= notice_colour %>; font-weight: bold;"><%= notice %></p>
   <% end %>
   <% if total_imported.present? %>
     <p><%= total_imported %> <%= "assessment".pluralize(total_imported) %> imported</p>
