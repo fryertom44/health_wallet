@@ -9,4 +9,6 @@ class Assessment
 
   embeds_many :observations
   accepts_nested_attributes_for :observations
+
+  validates_presence_of :reference
 end
