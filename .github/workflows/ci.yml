@@ -68,12 +68,22 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    # services:
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping: 1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     #  redis:
     #    image: valkey/valkey:8
     #    ports:
     #      - 6379:6379
     #    options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -88,7 +98,12 @@ jobs:
           RAILS_ENV: test
           # RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
           # REDIS_URL: redis://localhost:6379/0
-        run: bin/rails db:test:prepare test
+          MONGODB_URI: mongodb://localhost:27017/health_wallet_test
+        run: |
+          # Create test database and indexes
+          bin/rails db:migrate
+          bin/rails db:mongoid:create_indexes
+          bin/rails db:test:prepare test
 
   system-test:
     runs-on: ubuntu-latest
@@ -113,7 +128,11 @@ jobs:
           RAILS_ENV: test
           # RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
           # REDIS_URL: redis://localhost:6379/0
-        run: bin/rails db:test:prepare test:system
+          MONGODB_URI: mongodb://localhost:27017/health_wallet_test
+        run: |
+          bin/rails db:migrate
+          bin/rails db:mongoid:create_indexes
+          bin/rails db:test:prepare test:system
 
       - name: Keep screenshots from failed system tests
         uses: actions/upload-artifact@v4
