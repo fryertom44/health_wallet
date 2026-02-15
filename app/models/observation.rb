@@ -23,7 +23,7 @@ class Observation
   }.freeze
 
   validates_inclusion_of :code, in: CODE_NAMES.keys
-  validates_presence_of :value, :units
+  validates_presence_of :code, :value, :units
   validates_numericality_of :value
 
   def self.name_lookup(code)
